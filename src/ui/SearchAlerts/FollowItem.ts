@@ -157,6 +157,7 @@ export class FollowItem extends Component {
   }
 
   private handleSubscriptionDeleted(args: ISearchAlertsEventArgs) {
+    debugger;
     if (args.subscription.type == SUBSCRIPTION_TYPE.followDocument) {
       let typeConfig = <ISubscriptionItemRequest>args.subscription.typeConfig;
       if (typeConfig.id == this.getId()) {
@@ -166,6 +167,7 @@ export class FollowItem extends Component {
   }
 
   private handleSubscriptionCreated(args: ISearchAlertsEventArgs) {
+    debugger;
     if (args.subscription.type == SUBSCRIPTION_TYPE.followDocument) {
       let typeConfig = <ISubscriptionItemRequest>args.subscription.typeConfig;
       if (typeConfig.id == this.getId()) {
