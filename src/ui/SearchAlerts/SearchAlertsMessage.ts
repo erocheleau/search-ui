@@ -89,7 +89,7 @@ export class SearchAlertsMessage extends Component {
   private handleSubscriptionCreated(args: ISearchAlertsEventArgs) {
     this.close();
     if (args.dom != null) {
-      // debugger;
+      debugger;
       if (args.subscription.type == SUBSCRIPTION_TYPE.followQuery) {
         let typeConfig = <ISubscriptionQueryRequest>args.subscription.typeConfig;
         this.showMessage($$(args.dom), l('SubscriptionsMessageFollowQuery', _.escape(typeConfig.query.q) || l('EmptyQuery')), false);

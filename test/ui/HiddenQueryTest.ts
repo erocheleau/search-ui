@@ -101,7 +101,6 @@ export function HiddenQueryTest() {
         $$(test.env.root).on(BreadcrumbEvents.populateBreadcrumb, (e: Event, args: IPopulateBreadcrumbEventArgs) => {
           expect($$(<HTMLElement>args.breadcrumbs[0].element.firstChild).text()).toBe('foobar');
         });
-        debugger;
         $$(test.env.root).trigger(BreadcrumbEvents.populateBreadcrumb, { breadcrumbs: [] });
       })
     })
