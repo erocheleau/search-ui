@@ -2,13 +2,15 @@ import {Component} from '../Base/Component';
 import {IComponentBindings} from '../Base/ComponentBindings';
 import {ComponentOptions} from '../Base/ComponentOptions';
 import {Initialization} from '../Base/Initialization';
-import {QueryEvents, IQuerySuccessEventArgs} from '../../events/QueryEvents'
-import {analyticsActionCauseList, IAnalyticsResultsPerPageMeta, IAnalyticsActionCause} from '../Analytics/AnalyticsActionListMeta'
-import {Assert} from '../../misc/Assert'
-import {$$} from '../../utils/Dom'
+import {QueryEvents, IQuerySuccessEventArgs, INoResultsEventArgs} from '../../events/QueryEvents';
+import {analyticsActionCauseList, IAnalyticsResultsPerPageMeta, IAnalyticsActionCause} from '../Analytics/AnalyticsActionListMeta';
+import {Assert} from '../../misc/Assert';
+import {$$} from '../../utils/Dom';
+import {KeyboardUtils, KEYBOARD} from '../../utils/KeyboardUtils';
 
 export interface IResultsPerPageOptions {
   choicesDisplayed?: number[];
+  initialChoice?: number;
 }
 
 /**
@@ -24,41 +26,48 @@ export class ResultsPerPage extends Component {
   static options: IResultsPerPageOptions = {
     /**
      * Specifies the possible values of the number of results to display per page.<br/>
-     * The default value is 10, 25, 50, 100
+     * The default value is 10, 25, 50, 100.
      */
     choicesDisplayed: ComponentOptions.buildCustomListOption<number[]>(function (list: string[]) {
       let values = _.map(list, function (value) {
         return parseInt(value, 10);
       });
       return values.length == 0 ? null : values;
-    }, { defaultValue: [10, 25, 50, 100] })
+    }, { defaultValue: [10, 25, 50, 100] }),
+    /**
+     * Specifies the default value for the number of results to display per page.<br/>
+     * The default value is the first value of the choicesDisplayed parameter.
+     */
+    initialChoice: ComponentOptions.buildNumberOption()
   };
 
   private currentResultsPerPage: number;
-
+  private span: HTMLElement;
   private list: HTMLElement;
 
   /**
    * Create a new ResultsPerPage<br/>
    * Render itself on every query success.
-   * @param element HTMLElement on which to instantiate the page (Normally : a div)
+   * @param element HTMLElement on which to instantiate the page (Normally : a div).
    * @param options
    * @param bindings
    */
   constructor(public element: HTMLElement, public options?: IResultsPerPageOptions, bindings?: IComponentBindings) {
     super(element, ResultsPerPage.ID, bindings);
     this.options = ComponentOptions.initComponentOptions(element, ResultsPerPage, options);
-    this.currentResultsPerPage = this.options.choicesDisplayed[0];
+
+    this.currentResultsPerPage = this.getInitialChoice();
     this.queryController.options.resultsPerPage = this.currentResultsPerPage;
 
     this.bind.onRootElement(QueryEvents.querySuccess, (args: IQuerySuccessEventArgs) => this.handleQuerySuccess(args));
     this.bind.onRootElement(QueryEvents.queryError, () => this.handleQueryError());
+    this.bind.onRootElement(QueryEvents.noResults, (args: INoResultsEventArgs) => this.handleNoResults());
     this.initComponent(element);
   }
 
   /**
    * Set the current number of results per page, and execute a query.<br/>
-   * Log the required analytics event (pagerResize by default)
+   * Log the required analytics event (pagerResize by default).
    * @param resultsPerPage
    * @param analyticCause
    */
@@ -75,36 +84,46 @@ export class ResultsPerPage extends Component {
     });
   }
 
+  private getInitialChoice(): number {
+    let initialChoice = this.options.choicesDisplayed[0];
+    if (this.options.initialChoice !== undefined) {
+      if (this.options.choicesDisplayed.indexOf(this.options.initialChoice) > -1) {
+        initialChoice = this.options.initialChoice;
+      } else {
+        this.logger.warn('The initial number of results is not within the choices displayed. Consider setting a value that can be selected. The first choice will be selected instead.');
+      }
+    }
+    return initialChoice;
+  }
+
   private initComponent(element: HTMLElement) {
-    element.appendChild($$('span', {
+    this.span = $$('span', {
       className: 'coveo-results-per-page-text'
-    }, 'Results per page').el);
+    }, 'Results per page').el;
+    element.appendChild(this.span);
     this.list = $$('ul', {
       className: 'coveo-results-per-page-list'
     }).el;
     element.appendChild(this.list);
   }
 
-  private handleQueryError() {
-    this.reset();
-  }
-
-  private handleQuerySuccess(data: IQuerySuccessEventArgs) {
-    this.reset();
+  private render() {
+    $$(this.span).removeClass('coveo-results-per-page-no-results');
     let numResultsList: number[] = this.options.choicesDisplayed;
     for (var i = 0; i < numResultsList.length; i++) {
 
       let listItem = $$('li', {
-        className: 'coveo-results-per-page-list-item'
+        className: 'coveo-results-per-page-list-item',
+        tabindex: 0
       });
       if (numResultsList[i] == this.currentResultsPerPage) {
         listItem.addClass('coveo-active');
       }
 
       ((resultsPerPage: number) => {
-        listItem.on('click', () => {
-          this.handleClickPage(numResultsList[resultsPerPage]);
-        })
+        let clickAction = () => this.handleClickPage(numResultsList[resultsPerPage]);
+        listItem.on('click', clickAction);
+        listItem.on('keyup', KeyboardUtils.keypressAction(KEYBOARD.ENTER, clickAction));
       })(i);
 
       listItem.el.appendChild($$('a', {
@@ -113,12 +132,29 @@ export class ResultsPerPage extends Component {
       this.list.appendChild(listItem.el);
     }
   }
+
+  private handleQueryError() {
+    this.reset();
+  }
+
+  private handleNoResults() {
+    this.reset();
+  }
+
+  private handleQuerySuccess(data: IQuerySuccessEventArgs) {
+    if (data.results.results.length != 0) {
+      this.reset();
+      this.render();
+    }
+  }
+
   private handleClickPage(resultsPerPage: number) {
     Assert.exists(resultsPerPage);
     this.setResultsPerPage(resultsPerPage);
   }
 
   private reset() {
+    $$(this.span).addClass('coveo-results-per-page-no-results');
     $$(this.list).empty();
   }
 }

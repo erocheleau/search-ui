@@ -6,13 +6,16 @@ import {ResultListEvents} from '../../events/ResultListEvents';
 import {SettingsEvents} from '../../events/SettingsEvents';
 import {PreferencesPanelEvents} from '../../events/PreferencesPanelEvents';
 import {AnalyticsEvents} from '../../events/AnalyticsEvents';
-import {analyticsActionCauseList, IAnalyticsNoMeta} from '../Analytics/AnalyticsActionListMeta'
+import {analyticsActionCauseList, IAnalyticsNoMeta} from '../Analytics/AnalyticsActionListMeta';
 import {BreadcrumbEvents} from '../../events/BreadcrumbEvents';
 import {QuickviewEvents} from '../../events/QuickviewEvents';
 import {QUERY_STATE_ATTRIBUTES} from '../../models/QueryStateModel';
 import {Model} from '../../models/Model';
 import {Utils} from '../../utils/Utils';
 import {$$} from '../../utils/Dom';
+import {INoResultsEventArgs} from '../../events/QueryEvents';
+import {IQueryErrorEventArgs} from '../../events/QueryEvents';
+import {IComponentBindings} from '../Base/ComponentBindings';
 
 declare var coveoanalytics: CoveoAnalytics.CoveoUA;
 
@@ -33,7 +36,7 @@ export interface IRecommendationOptions extends ISearchInterfaceOptions {
  * This component can be included in another SearchInterface, but you need to initialize the recommendation component with Coveo('initRecommendation'), before
  * the parent SearchInterface.
  */
-export class Recommendation extends SearchInterface {
+export class Recommendation extends SearchInterface implements IComponentBindings {
   static ID = 'Recommendation';
   private static NEXT_ID = 1;
 
@@ -54,18 +57,17 @@ export class Recommendation extends SearchInterface {
     userContext: ComponentOptions.buildJsonOption(),
 
     /**
-     * Specifies the id of the inteface.
+     * Specifies the id of the interface.
      * It is used by the analytics to know which recommendation interface was selected.
      * The default value is "Recommendation" for the first one and "Recommendation_{number}" where {number} depends on the number of recommendation interface with default ids in the page for the others. 
      */
     id: ComponentOptions.buildStringOption(),
-
     /**
      * Specifies which options from the main {@link QueryBuilder} to use in the triggered query.
-     * Ex: <code data-options-to-use="expression, advancedExpression"></code> would add the expression and the advanced expression parts from the main query in the triggered query.
+     * Ex: <code data-options-to-use="expression,advancedExpression"></code> would add the expression and the advanced expression parts from the main query in the triggered query.
      * The default value is undefined.
      */
-    optionsToUse: ComponentOptions.buildListOption(),
+    optionsToUse: ComponentOptions.buildListOption<'expression' | 'advancedExpression' | 'constantExpression' | 'disjunctionExpression'>({ defaultValue: ['expression'] }),
 
     /**
      * Specifies whether or not to send the actions history along with the triggered query.
@@ -100,6 +102,12 @@ export class Recommendation extends SearchInterface {
 
     $$(this.element).on(QueryEvents.buildingQuery, (e: Event, args: IBuildingQueryEventArgs) => this.handleRecommendationBuildingQuery(args));
     $$(this.element).on(QueryEvents.querySuccess, (e: Event, args: IQuerySuccessEventArgs) => this.handleRecommendationQuerySuccess(args));
+    $$(this.element).on(QueryEvents.noResults, (e: Event, args: INoResultsEventArgs) => {
+      if (this.options.hideIfNoResults) {
+        this.hide();
+      }
+    });
+    $$(this.element).on(QueryEvents.queryError, (e: Event, args: IQueryErrorEventArgs) => this.hide());
 
     // This is done to allow the component to be included in another search interface without triggering the parent events.
     this.preventEventPropagation();
@@ -110,13 +118,25 @@ export class Recommendation extends SearchInterface {
     return this.options.id;
   }
 
+  public hide(): void {
+    this.displayStyle = this.element.style.display;
+    $$(this.element).hide();
+  }
+
+  public show(): void {
+    if (!this.displayStyle) {
+      this.displayStyle = this.element.style.display;
+    }
+    this.element.style.display = this.displayStyle;
+  }
+
   private bindToMainSearchInterface() {
     $$(this.options.mainSearchInterface).on(QueryEvents.querySuccess, (e: Event, args: IQuerySuccessEventArgs) => {
       this.mainInterfaceQuery = args;
       this.mainQuerySearchUID = args.results.searchUid;
       this.usageAnalytics.logSearchEvent<IAnalyticsNoMeta>(analyticsActionCauseList.recommendation, {});
       this.queryController.executeQuery();
-    })
+    });
   }
 
   private handleRecommendationBuildingQuery(data: IBuildingQueryEventArgs) {
@@ -127,10 +147,9 @@ export class Recommendation extends SearchInterface {
   private handleRecommendationQuerySuccess(data: IQuerySuccessEventArgs) {
     if (this.options.hideIfNoResults) {
       if (data.results.totalCount === 0) {
-        this.displayStyle = this.element.style.display;
-        $$(this.element).hide();
+        this.hide();
       } else {
-        this.element.style.display = this.displayStyle;
+        this.show();
       }
     }
   }
@@ -173,9 +192,9 @@ export class Recommendation extends SearchInterface {
     this.preventEventPropagationOn(this.getAllModelEvents());
   }
 
-  private preventEventPropagationOn(eventType, eventName = (event: string) => { return event }) {
+  private preventEventPropagationOn(eventType, eventName = (event: string) => { return event; }) {
     for (let event in eventType) {
-      $$(this.root).on(eventName(event), (e: Event) => { e.stopPropagation() });
+      $$(this.root).on(eventName(event), (e: Event) => e.stopPropagation());
     }
   }
 
@@ -185,15 +204,15 @@ export class Recommendation extends SearchInterface {
       _.each(_.values(QUERY_STATE_ATTRIBUTES), (attribute) => {
         let eventName = this.getBindings().queryStateModel.getEventName(event + attribute);
         events[eventName] = eventName;
-      })
-    })
+      });
+    });
     return events;
   }
 
   private generateDefaultId() {
     let id = 'Recommendation';
     if (Recommendation.NEXT_ID !== 1) {
-      this.logger.warn('Generating another recommendation default id', 'Consider configuring a human friendly / meaningful id for this interface')
+      this.logger.warn('Generating another recommendation default id', 'Consider configuring a human friendly / meaningful id for this interface');
       id = id + '_' + Recommendation.NEXT_ID;
     }
     Recommendation.NEXT_ID++;

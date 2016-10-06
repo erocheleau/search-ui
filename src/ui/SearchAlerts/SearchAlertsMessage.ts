@@ -13,8 +13,8 @@ export interface ISearchAlertMessageOptions {
 }
 
 /**
- * This component allows the @link{SearchAlerts} component to display messages.
- * This component should not be included in a web page. Instead, use a @link{SearchAlerts} component and access its message attribute.
+ * This component allows the {@link SearchAlerts} component to display messages.
+ * This component should not be included in a web page. Instead, use a {@link SearchAlerts} component and access its message attribute.
  */
 export class SearchAlertsMessage extends Component {
   static ID = 'SubscriptionsMessages';
@@ -40,11 +40,11 @@ export class SearchAlertsMessage extends Component {
 
     super(element, SearchAlertsMessage.ID, bindings);
 
-    this.bind.onRootElement(SearchAlertsEvents.searchAlertsCreated, (args: ISearchAlertsEventArgs) => { this.handleSubscriptionCreated(args) });
-    this.bind.oneRootElement(SearchAlertsEvents.searchAlertsFail, (args: ISearchAlertsEventArgs) => { this.handleSearchAlertsFail(args) });
-    this.bind.oneRootElement(SearchAlertsEvents.searchAlertsDeleted, () => { this.close() });
+    this.bind.onRootElement(SearchAlertsEvents.searchAlertsCreated, (args: ISearchAlertsEventArgs) => this.handleSubscriptionCreated(args));
+    this.bind.oneRootElement(SearchAlertsEvents.searchAlertsFail, (args: ISearchAlertsEventArgs) => this.handleSearchAlertsFail(args));
+    this.bind.oneRootElement(SearchAlertsEvents.searchAlertsDeleted, () => this.close());
 
-    this.bind.oneRootElement(QueryEvents.newQuery, () => { this.close() });
+    this.bind.oneRootElement(QueryEvents.newQuery, () => this.close());
   }
 
   public getCssClass(): string {
@@ -80,10 +80,10 @@ export class SearchAlertsMessage extends Component {
 
     this.message.on('mouseleave', () => {
       this.startCloseDelay();
-    })
+    });
     this.message.on('mouseenter', () => {
       this.stopCloseDelay();
-    })
+    });
   }
 
   private handleSubscriptionCreated(args: ISearchAlertsEventArgs) {
@@ -115,7 +115,7 @@ export class SearchAlertsMessage extends Component {
   }
 
   private stopCloseDelay() {
-    clearTimeout(this.closeTimeout)
+    clearTimeout(this.closeTimeout);
   }
 
   private close() {

@@ -1,25 +1,26 @@
-import {TemplateHelpers} from './TemplateHelpers'
-import {ComponentOptions} from '../Base/ComponentOptions'
-import {IHighlight, IHighlightPhrase, IHighlightTerm} from '../../rest/Highlight'
-import {HighlightUtils, StringAndHoles} from '../../utils/HighlightUtils'
-import {IStreamHighlightOptions} from '../../utils/StreamHighlightUtils'
-import {IDateToStringOptions, DateUtils} from '../../utils/DateUtils'
-import {ICurrencyToStringOptions, CurrencyUtils} from '../../utils/CurrencyUtils'
-import {IAnchorUtilsOptions, IImageUtilsOptions, AnchorUtils, ImageUtils} from '../../utils/HtmlUtils'
-import {IQueryResult} from '../../rest/QueryResult'
-import {IIconOptions, Icon} from '../Icon/Icon'
-import {Utils} from '../../utils/Utils'
-import {StringUtils} from '../../utils/StringUtils'
-import {TimeSpan, ITimeSpanUtilsOptions} from '../../utils/TimeSpanUtils'
-import {EmailUtils} from '../../utils/EmailUtils'
-import {QueryUtils} from '../../utils/QueryUtils'
-import {DeviceUtils} from '../../utils/DeviceUtils'
-import {TemplateCache} from './TemplateCache'
-import {$$} from '../../utils/Dom'
-import {SearchEndpoint} from '../../rest/SearchEndpoint'
+import {TemplateHelpers, ITemplateHelperFunction} from './TemplateHelpers';
+import {ComponentOptions} from '../Base/ComponentOptions';
+import {IHighlight, IHighlightPhrase, IHighlightTerm} from '../../rest/Highlight';
+import {HighlightUtils, StringAndHoles} from '../../utils/HighlightUtils';
+import {IStreamHighlightOptions} from '../../utils/StreamHighlightUtils';
+import {IDateToStringOptions, DateUtils} from '../../utils/DateUtils';
+import {ICurrencyToStringOptions, CurrencyUtils} from '../../utils/CurrencyUtils';
+import {IAnchorUtilsOptions, IImageUtilsOptions, AnchorUtils, ImageUtils} from '../../utils/HtmlUtils';
+import {IQueryResult} from '../../rest/QueryResult';
+import {IIconOptions, Icon} from '../Icon/Icon';
+import {Utils} from '../../utils/Utils';
+import {StringUtils} from '../../utils/StringUtils';
+import {TimeSpan, ITimeSpanUtilsOptions} from '../../utils/TimeSpanUtils';
+import {EmailUtils} from '../../utils/EmailUtils';
+import {QueryUtils} from '../../utils/QueryUtils';
+import {DeviceUtils} from '../../utils/DeviceUtils';
+import {TemplateCache} from './TemplateCache';
+import {$$} from '../../utils/Dom';
+import {SearchEndpoint} from '../../rest/SearchEndpoint';
 import {ResultList} from '../ResultList/ResultList';
 import {StreamHighlightUtils} from '../../utils/StreamHighlightUtils';
 import Globalize = require('globalize');
+import {IStringMap} from '../../rest/GenericParam';
 
 /**
  * The core template helpers provided by default.
@@ -153,21 +154,21 @@ export interface ICoreHelpers {
    * - `value`: The string that contains a list of semicolon-separated email
    *   values. When multiple values are passed, each value is displayed in a
    *   separate hyperlink.
-   * - `companyDomain`: The string that contains your own domain (e.g.,
+   * - `companyDomain`: The string that contains your own domain (e.g.:
    *   coveo.com). When specified, this parameter allows email addresses
    *   coming from your own domain to be displayed in a shortened format
-   *   (e.g., Full Name), whereas email addresses coming from an external
-   *   domain will be displayed in an extended format (e.g., Full Name
+   *   (e.g.: Full Name), whereas email addresses coming from an external
+   *   domain will be displayed in an extended format (e.g.: Full Name
    *   (domain.com)). If this parameter is not specified, then the shortened
    *   format will automatically be used.
    * - `me`: The string that contains the current username. If it is
    *   specified, then the email address containing the current username will
    *   be replaced by the localized string 'Me'.
    * - `lengthLimit`: The number of email addresses that you want to display
-   *   before an ellipse is added (e.g., 'From Joe, John and 5 others').<br/>
+   *   before an ellipse is added (e.g.: 'From Joe, John and 5 others').<br/>
    *   The default value is 2.
    * - `truncateName`: When the username is available from the email address,
-   *   then you can specify if you want to truncate the full name. (e.g.,
+   *   then you can specify if you want to truncate the full name. (e.g.:
    *   'John S.' instead of 'John Smith').<br/>
    *   The default value is `false`.
    */
@@ -235,7 +236,19 @@ export interface ICoreHelpers {
 
 export class CoreHelpers {
   public constructor() {
+  }
 
+  /**
+   * For backward compatibility reason, the "global" template helper should be available under the
+   * coveo namespace.
+   * @param scope
+   */
+  public static exportAllHelpersGlobally(scope: IStringMap<any>) {
+    _.each(TemplateHelpers.getHelpers(), (helper: ITemplateHelperFunction, name: string) => {
+      if (scope[name] == undefined) {
+        scope[name] = helper;
+      }
+    });
   }
 }
 
@@ -310,7 +323,7 @@ TemplateHelpers.registerTemplateHelper('highlightStreamHTML', (content: string, 
 });
 
 TemplateHelpers.registerFieldHelper('number', (value: any, options?: any) => {
-  var numberValue = Number(value)
+  var numberValue = Number(value);
   if (Utils.exists(value)) {
     if (_.isString(options)) {
       return StringUtils.htmlEncode(Globalize.format(numberValue, <string>options));
@@ -387,15 +400,15 @@ TemplateHelpers.registerTemplateHelper('excessEmailToggle', (target: HTMLElement
   if ($$(target).hasClass('coveo-emails-excess-collapsed')) {
     _.each($$(target).siblings('.coveo-emails-excess-expanded'), (sibling) => {
       $$(sibling).addClass('coveo-active');
-    })
+    });
   } else if ($$(target).hasClass('coveo-hide-expanded')) {
     $$(target.parentElement).addClass('coveo-inactive');
     _.each($$(target.parentElement).siblings('.coveo-emails-excess-collapsed'), (sibling) => {
       $$(sibling).addClass('coveo-active');
-    })
+    });
   }
   return undefined;
-})
+});
 
 TemplateHelpers.registerFieldHelper('anchor', (href: string, options?: IAnchorUtilsOptions) => {
   return AnchorUtils.buildAnchor(href, options);
@@ -421,7 +434,7 @@ TemplateHelpers.registerTemplateHelper('attrEncode', (value: string) => {
     .replace(/'/g, '&apos;')/* The 4 other predefined entities, required. */
     .replace(/'/g, '&quot;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+    .replace(/>/g, '&gt;');
 });
 
 TemplateHelpers.registerTemplateHelper('templateFields', (result: IQueryResult = resolveQueryResult()) => {
@@ -453,21 +466,21 @@ TemplateHelpers.registerTemplateHelper('loadTemplates', (templatesToLoad: { [id:
     if (value == 'default') {
       defaultTmpl = key;
     }
-  })
+  });
   if (defaultTmpl != undefined) {
-    toLoad = _.omit(templatesToLoad, defaultTmpl)
+    toLoad = _.omit(templatesToLoad, defaultTmpl);
   }
   _.each(toLoad, (condition, id?, obj?) => {
     if (!atLeastOneWasLoaded || !once) {
       atLeastOneWasLoaded = atLeastOneWasLoaded || condition;
       ret += TemplateHelpers.getHelper('loadTemplate')(id, condition, data);
     }
-  })
+  });
   if (!atLeastOneWasLoaded && defaultTmpl != undefined) {
     ret += TemplateHelpers.getHelper('loadTemplate')(defaultTmpl, true, data);
   }
   return ret;
-})
+});
 
 var byteMeasure = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB'];
 

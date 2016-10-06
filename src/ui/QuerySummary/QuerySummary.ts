@@ -17,7 +17,7 @@ export interface IQuerySummaryOptions {
 
 /**
  * This component displays information about the current range of results being displayed (ex: 1-10 of 123).<br/>
- * If the query matches no documents, it will display advices and tip for the end user on how to remedy the problem.
+ * If the query matches no document, it will display advices and tip for the end user on how to remedy the problem.
  */
 export class QuerySummary extends Component {
   static ID = 'QuerySummary';
@@ -39,6 +39,7 @@ export class QuerySummary extends Component {
   };
 
   private textContainer: HTMLElement;
+  private lastKnownGoodState: any;
 
   constructor(public element: HTMLElement, public options?: IQuerySummaryOptions, bindings?: IComponentBindings) {
     super(element, QuerySummary.ID, bindings);
@@ -83,6 +84,8 @@ export class QuerySummary extends Component {
       this.textContainer.innerHTML = l('QueryException', code);
     } else if (data.results.results.length == 0) {
       this.displayInfoOnNoResults();
+    } else {
+      this.lastKnownGoodState = this.queryStateModel.getAttributes();
     }
   }
 
@@ -101,13 +104,19 @@ export class QuerySummary extends Component {
 
     cancelLastAction.on('click', () => {
       this.usageAnalytics.logCustomEvent<IAnalyticsNoMeta>(analyticsActionCauseList.noResultsBack, {}, this.root);
-      this.usageAnalytics.logSearchEvent<IAnalyticsNoMeta>(analyticsActionCauseList.noResultsBack, {})
-      history.back();
+      this.usageAnalytics.logSearchEvent<IAnalyticsNoMeta>(analyticsActionCauseList.noResultsBack, {});
+      if (this.lastKnownGoodState) {
+        this.queryStateModel.reset();
+        this.queryStateModel.setMultiple(this.lastKnownGoodState);
+        this.queryController.executeQuery();
+      } else {
+        history.back();
+      }
     });
 
     let searchTipsInfo = $$('div', {
       className: 'coveo-query-summary-search-tips-info'
-    })
+    });
     searchTipsInfo.text(l('SearchTips'));
     let searchTips = $$('ul');
 

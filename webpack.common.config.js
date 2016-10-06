@@ -58,9 +58,14 @@ module.exports = {
           replace: ''
         }
       },
-      sassLoader,
       {
-        test: /\.(gif|svg|png|jpe?g|ttf|woff2?|eot)$/, loader: 'url?limit=8182'
+        test: /promise|es6-promise/,
+        loader: 'string-replace-loader',
+        query: {
+          // Prevent es6 promise from loading adjacent sourcemap (not needed anyways)
+          search: '//# sourceMappingURL=es6-promise.map',
+          replace: ''
+        }
       }
     ]
   },

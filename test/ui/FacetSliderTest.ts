@@ -5,6 +5,7 @@ import {Simulate} from '../Simulate';
 import {BreadcrumbEvents} from '../../src/events/BreadcrumbEvents';
 import {IPopulateBreadcrumbEventArgs} from '../../src/events/BreadcrumbEvents';
 import {$$} from '../../src/utils/Dom';
+import {FakeResults} from '../Fake';
 
 export function FacetSliderTest() {
   describe('FacetSlider', function () {
@@ -18,23 +19,23 @@ export function FacetSliderTest() {
       });
       (<jasmine.Spy>test.env.queryStateModel.get).and.returnValue([0, 100]);
       (<jasmine.Spy>test.env.queryStateModel.getDefault).and.returnValue([0, 100]);
-    })
+    });
 
     afterEach(function () {
       test = null;
-    })
+    });
 
     it('should not add a query expression if the slider is in it\'s default state', function () {
       test.cmp.setSelectedValues([0, 100]);
       let simulation = Simulate.query(test.env);
       expect(simulation.queryBuilder.build().aq).toBeUndefined();
-    })
+    });
 
     it('should add a query expression if the slider is not in it\'s default state', function () {
       test.cmp.setSelectedValues([5, 25]);
       let simulation = Simulate.query(test.env);
       expect(simulation.queryBuilder.build().aq).toBe('@foo==5..25');
-    })
+    });
 
     it('should request a group by', function () {
       let simulation = Simulate.query(test.env);
@@ -43,17 +44,17 @@ export function FacetSliderTest() {
           field: '@foo',
           generateAutomaticRanges: true
         })
-      ]))
-    })
+      ]));
+    });
 
     it('should return the correct selected values after a query, which is it\'s options', function () {
       Simulate.query(test.env);
       expect(test.cmp.getSelectedValues()).toEqual(jasmine.arrayContaining([0, 100]));
-    })
+    });
 
     it('should return undefined values if there has not been a query yet', function () {
       expect(test.cmp.getSelectedValues()).toEqual(jasmine.arrayContaining([undefined, undefined]));
-    })
+    });
 
     it('should return selected values from the query state if available', function () {
       let spy: jasmine.Spy = jasmine.createSpy('rangeState');
@@ -61,18 +62,39 @@ export function FacetSliderTest() {
       test.env.queryStateModel.get = spy;
       Simulate.query(test.env);
       expect(test.cmp.getSelectedValues()).toEqual(jasmine.arrayContaining([60, 75]));
-    })
+    });
 
     it('should populate breadcrumb only if not in default state', function () {
       let breadcrumbs = [];
-      $$(test.env.root).trigger(BreadcrumbEvents.populateBreadcrumb, <IPopulateBreadcrumbEventArgs>{ breadcrumbs: breadcrumbs })
+      $$(test.env.root).trigger(BreadcrumbEvents.populateBreadcrumb, <IPopulateBreadcrumbEventArgs>{ breadcrumbs: breadcrumbs });
       expect(breadcrumbs.length).toBe(0);
 
       breadcrumbs = [];
       test.cmp.setSelectedValues([50, 60]);
-      $$(test.env.root).trigger(BreadcrumbEvents.populateBreadcrumb, <IPopulateBreadcrumbEventArgs>{ breadcrumbs: breadcrumbs })
+      $$(test.env.root).trigger(BreadcrumbEvents.populateBreadcrumb, <IPopulateBreadcrumbEventArgs>{ breadcrumbs: breadcrumbs });
       expect(breadcrumbs.length).toBe(1);
-    })
+    });
+
+    it('should be disabled if the query results is not a range response', () => {
+      let disableSpy = jasmine.createSpy('spy');
+      test.cmp.disable = disableSpy;
+      let correctGroupByValue = FakeResults.createFakeGroupByRangeValue(0, 100, 'foo', 5);
+      let correctGroupBy = FakeResults.createFakeGroupByResult('@foo', 'foo', 10);
+      correctGroupBy.values = [correctGroupByValue];
+      Simulate.query(test.env, {
+        groupByResults: [correctGroupBy]
+      });
+      expect(test.cmp.disable).not.toHaveBeenCalled();
+
+      let badGroupByValue = FakeResults.createFakeGroupByValue('foo', 5);
+      let badGroupBy = FakeResults.createFakeGroupByResult('@foo', 'foo', 10);
+      badGroupBy.values = [badGroupByValue];
+      Simulate.query(test.env, {
+        groupByResults: [badGroupBy]
+      });
+
+      expect(test.cmp.disable).toHaveBeenCalled();
+    });
 
     describe('exposes options', function () {
       it('dateField should change the query expression to a correct date expression', function () {
@@ -88,7 +110,7 @@ export function FacetSliderTest() {
         test.cmp.setSelectedValues([startSelected.getTime(), endSelected.getTime()]);
         let simulation = Simulate.query(test.env);
         expect(simulation.queryBuilder.build().aq).toBe('@foo==2100/01/01@00:00:00..2200/01/01@00:00:00');
-      })
+      });
 
       it('queryOverride should output a query override in the group by request', function () {
         test = Mock.optionsComponentSetup<FacetSlider, IFacetSliderOptions>(FacetSlider, {
@@ -108,7 +130,7 @@ export function FacetSliderTest() {
             field: '@foo'
           })
         ]));
-      })
+      });
 
       it('title should modify the header', function () {
         test = Mock.optionsComponentSetup<FacetSlider, IFacetSliderOptions>(FacetSlider, {
@@ -120,7 +142,7 @@ export function FacetSliderTest() {
 
         test.cmp.ensureDom();
         expect($$($$(test.cmp.facetHeader.build()).find('.coveo-facet-header-title')).text()).toBe('nice title');
-      })
-    })
-  })
+      });
+    });
+  });
 }
