@@ -9,11 +9,11 @@
     @include retina-sprite($quickview-group);
   }
 
-  &:hover .coveo-caption-for-icon {
+  &:hover .coveo-caption-for-quickview {
     display: inline;
   }
   
-  .coveo-caption-for-icon {
+  .coveo-caption-for-quickview {
     font-size: $font-size-smallest;
     display: none;
     background: $color-greyish-dark-blue;

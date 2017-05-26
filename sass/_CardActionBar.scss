@@ -32,6 +32,19 @@
   .coveo-icon {
     margin-right: 3px;
   }
+
+  /* In the CardActionBar, display the Quickview inline instead of a floating caption*/
+  .coveo-caption-for-quickview {
+    display: flex;
+    transform: translate(0,0);
+    position: initial;
+    background: transparent;
+
+    &:before {
+      display: none;
+    }
+  }
+
 }
 
 .coveo-card-action-bar-arrow-container {
